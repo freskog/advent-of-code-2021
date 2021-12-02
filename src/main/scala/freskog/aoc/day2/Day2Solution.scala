@@ -4,7 +4,6 @@ import zio._
 import zio.stream._
 
 import freskog.aoc.utils._
-import java.text.Normalizer.Form
 
 object Day2Solution extends ZIOAppDefault {
 
@@ -43,29 +42,29 @@ object Day2Solution extends ZIOAppDefault {
       }
   }
 
-  case class PosWithAim(horizontal:Int, depth: Int, aim:Int) {
-      def update(instruction:Instruction): PosWithAim =
-          instruction match {
-              case Instruction(Direction.Up, units) => PosWithAim(horizontal, depth, aim - units)
-              case Instruction(Direction.Down, units) => PosWithAim(horizontal, depth, aim + units)
-              case Instruction(Direction.Forward, units) => PosWithAim(horizontal + units, depth + (aim * units), aim)
-          }
+  case class PosWithAim(horizontal: Int, depth: Int, aim: Int) {
+    def update(instruction: Instruction): PosWithAim =
+      instruction match {
+        case Instruction(Direction.Up, units)      => PosWithAim(horizontal, depth, aim - units)
+        case Instruction(Direction.Down, units)    => PosWithAim(horizontal, depth, aim + units)
+        case Instruction(Direction.Forward, units) => PosWithAim(horizontal + units, depth + (aim * units), aim)
+      }
   }
 
   def part1(inputPath: String) =
     readAsOneStringPerLine(inputPath)
-        .mapZIO((in:String) => ZIO.fromOption(Instruction(in)).mapError( _ => new IllegalArgumentException(in)))
-        .runFold(Pos(0,0))(_ update _)
-        .map(pos => pos.horizontal * pos.depth)
+      .mapZIO((in: String) => ZIO.fromOption(Instruction(in)).mapError(_ => new IllegalArgumentException(in)))
+      .runFold(Pos(0, 0))(_ update _)
+      .map(pos => pos.horizontal * pos.depth)
 
-  def part2(inputPath:String) =
-      readAsOneStringPerLine(inputPath)
-        .mapZIO((in:String) => ZIO.fromOption(Instruction(in)).mapError(_ => new IllegalArgumentException(in)))
-        .runFold(PosWithAim(0,0,0))(_ update _)
-        .map(pos => pos.horizontal * pos.depth)
+  def part2(inputPath: String) =
+    readAsOneStringPerLine(inputPath)
+      .mapZIO((in: String) => ZIO.fromOption(Instruction(in)).mapError(_ => new IllegalArgumentException(in)))
+      .runFold(PosWithAim(0, 0, 0))(_ update _)
+      .map(pos => pos.horizontal * pos.depth)
 
-  def run: ZIO[Environment with ZEnv with ZIOAppArgs, Any, Any] = 
-      part1("day2/day2-input-part-1.txt").flatMap( answer => Console.printLine(s"Part1: $answer")) *>
-      part2("day2/day2-input-part-1.txt").flatMap( answer => Console.printLine(s"Part2: $answer"))
+  def run: ZIO[Environment with ZEnv with ZIOAppArgs, Any, Any] =
+    part1("day2/day2-input-part-1.txt").flatMap(answer => Console.printLine(s"Part1: $answer")) *>
+      part2("day2/day2-input-part-1.txt").flatMap(answer => Console.printLine(s"Part2: $answer"))
 
 }
