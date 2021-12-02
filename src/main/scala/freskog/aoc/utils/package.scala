@@ -6,8 +6,11 @@ import zio.stream.ZStream
 
 package object utils {
 
+  def readAsOneStringPerLine(inputPath:String):ZStream[Any, Throwable, String] =
+    (ZStream.fromResource(inputPath) @@ utf8Decode @@ splitLines)
+
   def readAsOneLongPerLine(inputPath:String):ZStream[Any, Throwable, Long] =
-    (ZStream.fromResource(inputPath) @@ utf8Decode @@ splitLines).mapZIO(num => ZIO.attempt(num.toLong))
+    readAsOneStringPerLine(inputPath).mapZIO(num => ZIO.attempt(num.toLong))
 
   def sliding(n:Int) =
     scan[Long, Chunk[Long]](Chunk.empty) {
