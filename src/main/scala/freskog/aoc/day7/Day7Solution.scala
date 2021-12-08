@@ -39,7 +39,6 @@ object Day7Solution extends ZIOAppDefault {
         potentialMiddles.minBy(_._2)._2
       }
 
-
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
     part1("day7/day7-input-part-1.txt").flatMap( answer => Console.printLine(s"Part1: $answer")) *>
     part2("day7/day7-input-part-1.txt").flatMap( answer => Console.printLine(s"Part2: $answer"))
