@@ -22,8 +22,8 @@ object Day10Solution extends ZIOAppDefault {
 
   def part1(inputPath: String) =
     readAsOneStringPerLine(inputPath)
-      .map(input => checkSyntax(input.iterator, Nil).swap.toOption)
-      .collectSome
+      .map(input => checkSyntax(input.iterator, Nil))
+      .collectLeft
       .runFold(Map.empty[Char, Long]) {
         case (acc, ')') => acc.updated(')', acc.getOrElse(')', 0L) + 3L)
         case (acc, ']') => acc.updated(']', acc.getOrElse(']', 0L) + 57L)
@@ -34,8 +34,8 @@ object Day10Solution extends ZIOAppDefault {
 
   def part2(inputPath: String) =
     readAsOneStringPerLine(inputPath)
-      .map(input => checkSyntax(input.iterator, Nil).toOption)
-      .collectSome
+      .map(input => checkSyntax(input.iterator, Nil))
+      .collectRight
       .map {
         _.foldLeft(0L) {
           case (acc, ')') => (acc * 5L) + 1L
