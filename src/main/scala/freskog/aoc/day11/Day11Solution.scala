@@ -3,20 +3,24 @@ package freskog.aoc.day11
 import freskog.aoc.day11.Day11Solution.Dumbos.initialLocations
 import zio._
 import freskog.aoc.utils._
+import zio.stream.{ZSink, ZStream}
 
 object Day11Solution extends ZIOAppDefault {
 
   case class Location(x: Int, y: Int)
 
   object Dumbos {
-    val initialLocations: Set[Location] =
-      (0 until 10).flatMap(y => (0 until 10).map(Location(_, y))).toSet
+    val initialLocations: Chunk[Location] =
+      Chunk.fromIterable((0 until 10).flatMap(y => (0 until 10).map(Location(_, y))))
 
     def from(input:String):Dumbos =
-      Dumbos(input.split("\n").map(line => line.toArray.map(_.toString.toInt)))
+      Dumbos( {
+        val array = input.split("\n").map(line => line.toArray.map(_.toString.toInt))
+        initialLocations.foldLeft(Map.empty[Location, Int])((acc, l) => acc.updated(l, array(l.y)(l.x)))
+      })
    }
 
-  case class Dumbos(byRows:Array[Array[Int]]) { self =>
+  case class Dumbos(byLoc:Map[Location, Int]) { self =>
 
     def neighborsOf(loc: Location): Set[Location] =
      Set(
@@ -31,31 +35,25 @@ object Day11Solution extends ZIOAppDefault {
      ).filter( l => 0 <= l.x & l.x <= 9 && 0 <= l.y && l.y <= 9)
 
     def read(loc:Location):Int =
-      byRows(loc.y)(loc.x)
+      byLoc(loc)
 
     def set(loc:Location, value:Int):Dumbos =
-      { byRows(loc.y)(loc.x) = value ; self }
+      Dumbos(byLoc.updated(loc, value))
 
-    def nextStep(flashesSoFar:Int): (Dumbos, Int) = {
-      def flash(remaining:Chunk[Location], count: Int): Int = {
-        if (remaining.isEmpty) count
-        else if(read(remaining.head) < 10) {
-            set(remaining.head, read(remaining.head) + 1)
-            if(read(remaining.head) == 10)
-              flash(remaining.tail ++ neighborsOf(remaining.head), count + 1)
-            else
-              flash(remaining.tail, count)
-        } else flash(remaining.tail, count)
-      }
-      val newCount = flash(Chunk.fromArray(initialLocations.toArray), flashesSoFar)
-      initialLocations.filter(read(_) == 10).foreach(set(_, 0))
-      (self, newCount)
-    }
+    def nextStep(increment:Chunk[Location]): Dumbos =
+      if(increment.isEmpty) Dumbos(byLoc.map { case (l, v) => (l, if(v == 10) 0 else v)} )
+      else if(byLoc(increment.head) == 10) nextStep(increment.tail)
+      else if(byLoc(increment.head) == 9)
+        set(increment.head, read(increment.head) + 1).nextStep(increment.tail ++ neighborsOf(increment.head))
+      else
+        set(increment.head, read(increment.head) + 1).nextStep(increment.tail)
 
-    def render:String =
-      byRows.map(_.mkString("")).mkString("\n","\n","")
+    def flashes: Int =
+      byLoc.values.count(_ == 0)
 
-    def notAllZeroes:Boolean = byRows.exists(_.exists(_ != 0))
+    def notAllZeroes:Boolean =
+      flashes != 100
+
   }
 
   def part1(inputPath: String) =
@@ -65,9 +63,11 @@ object Day11Solution extends ZIOAppDefault {
       .map(Dumbos.from)
       .map { initial =>
         Iterator
-          .iterate((initial,0))( p => p._1.nextStep(p._2))
-          .drop(100)
-          .next()._2
+          .iterate(initial)(_.nextStep(Dumbos.initialLocations))
+          .take(101)
+          .toList
+          .map(_.flashes)
+          .sum
       }
 
   def part2(inputPath:String) =
@@ -77,14 +77,13 @@ object Day11Solution extends ZIOAppDefault {
       .map(Dumbos.from)
       .map { initial =>
         Iterator
-          .iterate((initial, 0))( p => p._1.nextStep(p._2))
-          .takeWhile(_._1.notAllZeroes)
+          .iterate(initial)(_.nextStep(Dumbos.initialLocations))
+          .takeWhile(_.notAllZeroes)
           .toList
           .length
-
       }
 
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
-    part1("day11/day11-input-part-1.txt").flatMap( answer => Console.printLine(s"Part1: $answer")) *>
-      part2("day11/day11-input-part-1.txt").flatMap( answer => Console.printLine(s"Part2: $answer"))
+    part1("day11/day11-test-input-part-1.txt").flatMap( answer => Console.printLine(s"Part1: $answer")) *>
+      part2("day11/day11-test-input-part-1.txt").flatMap( answer => Console.printLine(s"Part2: $answer"))
 }
