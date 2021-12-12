@@ -38,13 +38,14 @@ object Day11Solution extends ZIOAppDefault {
     def set(loc: Location, value: Int): Dumbos =
       Dumbos(byLoc.updated(loc, value))
 
-    def nextStep(increment: Chunk[Location]): Dumbos =
-      if (increment.isEmpty) Dumbos(byLoc.map { case (l, v) => (l, if (v == 10) 0 else v) })
-      else if (byLoc(increment.head) == 10) nextStep(increment.tail)
-      else if (byLoc(increment.head) == 9)
-        set(increment.head, read(increment.head) + 1).nextStep(increment.tail ++ neighborsOf(increment.head))
-      else
-        set(increment.head, read(increment.head) + 1).nextStep(increment.tail)
+    def addOne(loc: Location): Dumbos =
+      set(loc, read(loc) + 1)
+
+    def nextStep(locs: Chunk[Location]): Dumbos =
+      if (locs.isEmpty) Dumbos(byLoc.map { case (l, v) => (l, if (v == 10) 0 else v) })
+      else if (byLoc(locs.head) == 10) nextStep(locs.tail)
+      else if (byLoc(locs.head) == 9) addOne(locs.head).nextStep(locs.tail ++ neighborsOf(locs.head))
+      else addOne(locs.head).nextStep(locs.tail)
 
     def flashes: Int =
       byLoc.values.count(_ == 0)
