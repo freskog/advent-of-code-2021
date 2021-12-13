@@ -9,6 +9,9 @@ package object utils {
   def readAsOneStringPerLine(inputPath:String):ZStream[Any, Throwable, String] =
     (ZStream.fromResource(inputPath) @@ utf8Decode @@ splitLines)
 
+  def readAsGroupsSplitByEmptyLine(inputPath:String):ZStream[Any, Throwable, String] =
+    (ZStream.fromResource(inputPath) @@ utf8Decode @@ splitOn("\n\n"))
+
   def readAsOneLongPerLine(inputPath:String):ZStream[Any, Throwable, Long] =
     readAsOneStringPerLine(inputPath).mapZIO(num => ZIO.attempt(num.toLong))
 
