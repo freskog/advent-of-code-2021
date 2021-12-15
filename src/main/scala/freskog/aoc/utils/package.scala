@@ -6,6 +6,9 @@ import zio.stream.ZStream
 
 package object utils {
 
+  def readAllAsString[A](inputPath:String):ZIO[Any, Throwable, String] =
+    (ZStream.fromResource(inputPath) @@ utf8Decode).runFold("")(_ ++ _)
+
   def readAsOneStringPerLine(inputPath:String):ZStream[Any, Throwable, String] =
     (ZStream.fromResource(inputPath) @@ utf8Decode @@ splitLines)
 
