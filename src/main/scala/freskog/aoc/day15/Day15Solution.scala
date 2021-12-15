@@ -3,7 +3,6 @@ package freskog.aoc.day15
 import zio._
 import freskog.aoc.utils._
 
-
 import scala.annotation.tailrec
 
 object Day15Solution extends ZIOAppDefault {
@@ -24,7 +23,14 @@ object Day15Solution extends ZIOAppDefault {
       if (prev.contains(n)) calculatePath(prev(n), prev, acc.prepended(n)) else acc
 
     @tailrec
-    private def dijkstra(current: Loc, dest: Loc, prev: Map[Loc, Loc], dist: Map[Loc, Int], unvisitedDist:Map[Loc, Int], unvisited: Set[Loc]): Chunk[Loc] =
+    private def dijkstra(
+      current: Loc,
+      dest: Loc,
+      prev: Map[Loc, Loc],
+      dist: Map[Loc, Int],
+      unvisitedDist: Map[Loc, Int],
+      unvisited: Set[Loc]
+    ): Chunk[Loc] =
       if (unvisited.isEmpty) Chunk.empty
       else if (current == dest) calculatePath(dest, prev, Chunk.empty)
       else {
@@ -38,19 +44,16 @@ object Day15Solution extends ZIOAppDefault {
               else
                 (distAcc, prevAcc, unvisitedDistAcc)
             }
-        val (next, _) = nextUnvisitedDist.minBy(_._2)
+        val (next, _)                               = nextUnvisitedDist.minBy(_._2)
         dijkstra(next, dest, nextPrev, nextDist, nextUnvisitedDist - current, unvisited - current)
       }
 
     def safestPath: Chunk[Loc] =
       dijkstra(Loc(0, 0), endLoc, Map.empty, Map(Loc(0, 0) -> 0), Map.empty, cost.keySet - Loc(0, 0))
 
-    def render:String = {
+    def render: String         =
       "\n" ++
-        (for (y <- 0 to endLoc.y) yield
-          (for (x <- 0 to endLoc.x) yield cost(Loc(x,y))).mkString("")
-          ).mkString("\n")
-    }
+        (for (y <- 0 to endLoc.y) yield (for (x <- 0 to endLoc.x) yield cost(Loc(x, y))).mkString("")).mkString("\n")
 
   }
 
@@ -86,6 +89,6 @@ object Day15Solution extends ZIOAppDefault {
     readAllAsString(inputPath).map(Cave.expandFrom).map(c => c.safestPath.map(c.cost).sum)
 
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
-    part1("day15/day15-test-input-part-1.txt").flatMap(answer => Console.printLine(s"Part1: $answer")) *>
+    part1("day15/day15-input-part-1.txt").flatMap(answer => Console.printLine(s"Part1: $answer")) *>
       part2("day15/day15-input-part-1.txt").flatMap(answer => Console.printLine(s"Part2: $answer"))
 }
