@@ -13,8 +13,8 @@ object Day15Solution extends ZIOAppDefault {
     def adjacent(loc: Loc): Chunk[Loc] =
       Chunk(Loc(loc.x - 1, loc.y), Loc(loc.x, loc.y - 1), Loc(loc.x + 1, loc.y), Loc(loc.x, loc.y + 1)).filter(cost.contains)
 
-    def riskOf(path: Chunk[Loc]): Int =
-      path.map(cost).sum
+    def riskOfSafestPath: Int =
+      safestPath.map(cost).sum
 
     def calculateCost(n: Loc, prev: Map[Loc, Loc], acc: Int): Int =
       if (prev.contains(n)) calculateCost(prev(n), prev, acc + cost(n)) else acc
@@ -65,6 +65,7 @@ object Day15Solution extends ZIOAppDefault {
       }
       Cave(cost, Loc(x - 1, y))
     }
+
     def expandFrom(input: String): Cave = {
       @tailrec
       def shift(n: Int, steps: Int): Int = if (steps == 0) n else shift(if (n == 9) 1 else n + 1, steps - 1)
@@ -83,7 +84,7 @@ object Day15Solution extends ZIOAppDefault {
   }
 
   def part1(inputPath: String) =
-    readAllAsString(inputPath).map(Cave.from).map(c => c.safestPath.map(c.cost).sum)
+    readAllAsString(inputPath).map(Cave.from(_).riskOfSafestPath)
 
   def part2(inputPath: String) =
     readAllAsString(inputPath).map(Cave.expandFrom).map(c => c.safestPath.map(c.cost).sum)

@@ -9,6 +9,7 @@ val zioVersion = "2.0.0-M6-2"
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio"          % zioVersion,
   "dev.zio" %% "zio-streams"  % zioVersion,
+  "com.lihaoyi" %% "fastparse" % "2.2.2",
   "dev.zio" %% "zio-test"     % zioVersion % "test",
   "dev.zio" %% "zio-test-sbt" % zioVersion % "test"
 )
