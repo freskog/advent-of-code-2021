@@ -1,10 +1,11 @@
 package freskog.aoc.day16
 
 import zio._
-
 import freskog.aoc.utils._
+import fastparse._
+import NoWhitespace._
 
-import fastparse._, NoWhitespace._
+import scala.annotation.tailrec
 
 object Day16Solution extends ZIOAppDefault {
 
@@ -17,9 +18,9 @@ object Day16Solution extends ZIOAppDefault {
         case PktType.Min     => data.eval.min
         case PktType.Max     => data.eval.max
         case PktType.Lit     => data.eval.head
-        case PktType.Greater => data.eval match { case n1 :: n2 :: Nil => if(n1 > n2) 1 else 0 }
-        case PktType.Less    => data.eval match { case n1 :: n2 :: Nil => if(n1 < n2) 1 else 0 }
-        case PktType.EqualTo => data.eval match { case n1 :: n2 :: Nil => if(n1 == n2) 1 else 0}
+        case PktType.Greater => data.eval match { case n1 :: n2 :: Nil => if (n1 > n2) 1 else 0 }
+        case PktType.Less    => data.eval match { case n1 :: n2 :: Nil => if (n1 < n2) 1 else 0 }
+        case PktType.EqualTo => data.eval match { case n1 :: n2 :: Nil => if (n1 == n2) 1 else 0 }
       }
 
     def sumVersions: Int =
@@ -71,6 +72,7 @@ object Day16Solution extends ZIOAppDefault {
   object PacketParser {
 
     def binaryStrToNumber(binStr: String): BigDecimal = {
+      @tailrec
       def build(remaining: String, pow: BigDecimal, acc: BigDecimal): BigDecimal =
         if (remaining.isEmpty) acc else build(remaining.tail, pow * 2, if (remaining.head == '1') acc + pow else acc)
       build(binStr.reverse, BigDecimal(1), BigDecimal(0))
@@ -89,37 +91,31 @@ object Day16Solution extends ZIOAppDefault {
     def literalStr[_: P]: P[(Int, String)] = binaryDigit.flatMap {
       case "0" => binaryDigit.rep(exactly = 4).!.map((5, _))
       case "1" =>
-        binaryDigit.rep(exactly = 4).!.flatMap { case grp =>
-          literalStr.map { case (accLen, accGrp) => (5 + accLen, grp ++ accGrp) }
-        }
+        for {
+          fourDigits           <- binaryDigit.rep(exactly = 4).!
+          lenAndDigits         <- literalStr
+          (lengthAcc, digitAcc) = lenAndDigits
+        } yield (5 + lengthAcc, fourDigits ++ digitAcc)
     }
 
-    def operandsBySubpackets[_: P](numberOfSubPackets: Int): P[PacketData.Operator] =
-      packet.rep(exactly = numberOfSubPackets).map(_.toList).map(PacketData.Operator)
+    def operandsBySubpackets[_: P](numberOfSubPackets: Int): P[List[Packet]] =
+      packet.rep(exactly = numberOfSubPackets).map(_.toList)
 
-    def operandsByTotalBits[_: P](numberOfBits: Int): P[PacketData.Operator] =
-      if (numberOfBits == 0) Pass(PacketData.Operator(Nil))
-      else packet.flatMap(pkt => operandsByTotalBits(numberOfBits - pkt.bits).map(op => PacketData.Operator(pkt :: op.subPackets)))
+    def operandsByTotalBits[_: P](numberOfBits: Int): P[List[Packet]] =
+      if (numberOfBits == 0) Pass(Nil)
+      else packet.flatMap(pkt => operandsByTotalBits(numberOfBits - pkt.bits).map(pkt :: _))
 
-    def literalNumber[_: P]: P[(Int, PacketData.Literal)] =
-      literalStr.map { case (lenInBits, str) =>
-        (lenInBits, PacketData.Literal(binaryStrToNumber(str)))
-      }
+    def lengthAndBigDecimal[_: P]: P[(Int, BigDecimal)] =
+      literalStr.map { case (lenInBits, str) => (lenInBits, binaryStrToNumber(str)) }
 
-    def genericOperator[_: P]: P[(Int, PacketData.Operator)] = binaryDigit.flatMap {
+    def lengthAndPackets[_: P]: P[(Int, List[Packet])]  = binaryDigit.flatMap {
       case "0" => binaryInt(15).flatMap(bits => operandsByTotalBits(bits).map((bits + 16, _)))
-      case "1" =>
-        binaryInt(11).flatMap { pkts =>
-          operandsBySubpackets(pkts).map { case PacketData.Operator(subPackets) =>
-            val bits = subPackets.map(_.bits).sum + 12
-            (bits, PacketData.Operator(subPackets))
-          }
-        }
+      case "1" => binaryInt(11).flatMap(operandsBySubpackets).map(pkts => (pkts.map(_.bits).sum + 12, pkts))
     }
 
     def packetData[_: P](id: Int): P[(Int, PacketData)] = id match {
-      case 4 => literalNumber
-      case _ => genericOperator
+      case 4 => lengthAndBigDecimal.map { case (len, bigDec) => (len, PacketData.Literal(bigDec)) }
+      case _ => lengthAndPackets.map { case (len, pkts) => (len, PacketData.Operator(pkts)) }
     }
 
     def packet[_: P]: P[Packet] =
@@ -156,7 +152,7 @@ object Day16Solution extends ZIOAppDefault {
     }
   }
 
-  def buildPacket(inputAsHex:String):Packet =
+  def buildPacket(inputAsHex: String): Packet =
     PacketParser.packetFrom(PacketParser.convertFromHexToBinary(inputAsHex))
 
   def part1(inputPath: String) =
@@ -164,7 +160,6 @@ object Day16Solution extends ZIOAppDefault {
 
   def part2(inputPath: String) =
     readAllAsString(inputPath).map(buildPacket(_).eval)
-
 
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
     part1("day16/day16-input-part-1.txt").flatMap(answer => Console.printLine(s"Part1: $answer")) *>
