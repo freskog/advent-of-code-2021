@@ -110,7 +110,7 @@ object Day16Solution extends ZIOAppDefault {
 
     def lengthAndPackets[_: P]: P[(Int, List[Packet])]  = binaryDigit.flatMap {
       case "0" => binaryInt(15).flatMap(bits => operandsByTotalBits(bits).map((bits + 16, _)))
-      case "1" => binaryInt(11).flatMap(operandsBySubpackets).map(pkts => (pkts.map(_.bits).sum + 12, pkts))
+      case "1" => binaryInt(11).flatMap(operandsBySubpackets(_)).map(pkts => (pkts.map(_.bits).sum + 12, pkts))
     }
 
     def packetData[_: P](id: Int): P[(Int, PacketData)] = id match {
