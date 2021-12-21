@@ -90,7 +90,7 @@ object Day18Solution extends ZIOAppDefault {
       )
     )
     zippedNumber
-      .transform(explodeIfNeeded) // Start by exploding all numbers
+      .transform(explodeIfNeeded) // Start by exploding numbers that need it
       .transform(split)           // Split, and maintain invariant around explode/split order
       .current
   }
