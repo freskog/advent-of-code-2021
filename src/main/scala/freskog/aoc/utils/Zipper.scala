@@ -3,11 +3,11 @@ package freskog.aoc.utils
 import scala.annotation.tailrec
 
 object Zipper {
-  case class Lens[A,B](get:A => B, set:(A,B) => A)
+  case class Lens[A, B](get: A => B, set: (A, B) => A)
 
   case class Navigate[Tree, Node, Leaf](
-    leftL:Lens[Node,Tree],
-    rightL:Lens[Node, Tree],
+    leftL: Lens[Node, Tree],
+    rightL: Lens[Node, Tree],
     asNode: Tree => Option[Node],
     asLeaf: Tree => Option[Leaf]
   )
@@ -114,7 +114,6 @@ trait Zipper[Tree, Node, Leaf] { self =>
   final def transform(
     f: PartialFunction[Zipper[Tree, Node, Leaf], Zipper[Tree, Node, Leaf]]
   )(implicit ev: Node <:< Tree): Zipper[Tree, Node, Leaf] = {
-    //println(s"${"Root -> " ++ path.reverse.mkString(" -> ")} : ${self.current}")
     val transformed = f.lift(self).orElse(self.next)
     transformed match {
       case Some(nextToTransform) =>
@@ -124,21 +123,19 @@ trait Zipper[Tree, Node, Leaf] { self =>
     }
   }
 
-  def set(t: Tree)(implicit ev: Node <:< Tree): Zipper[Tree, Node, Leaf] = {
-    def go(remainingChildren: List[Node], remainingPaths: List[Path]): List[Node] =
-      (remainingChildren, remainingPaths) match {
-        case (Nil, _)                                                       => Nil
-        case (parent :: Nil, Path.Right :: Nil)                             => List(navigate.rightL.set(parent, t))
-        case (parent :: Nil, Path.Left :: Nil)                              => List(navigate.leftL.set(parent, t))
-        case (parent :: newRemainingChildren, posPath :: newRemainingPaths) =>
-          val l = go(newRemainingChildren, newRemainingPaths)
-          if (posPath == Path.Right)
-            navigate.rightL.set(parent, l.head) :: l
-          else
-            navigate.leftL.set(parent, l.head) :: l
-
-      }
-    newZipper(go(parents.reverse, path.reverse).reverse, t, path)
-  }
+  def set(t: Tree)(implicit ev: Node <:< Tree): Zipper[Tree, Node, Leaf] =
+    newZipper(
+      parents
+        .zip(path)
+        .foldLeft(List.empty[Node]) {
+          case (Nil, (parent, Path.Right)) => List(navigate.rightL.set(parent, t))
+          case (Nil, (parent, Path.Left))  => List(navigate.leftL.set(parent, t))
+          case (acc, (parent, Path.Left))  => navigate.leftL.set(parent, acc.head) :: acc
+          case (acc, (parent, Path.Right)) => navigate.rightL.set(parent, acc.head) :: acc
+        }
+        .reverse,
+      t,
+      path
+    )
 
 }
