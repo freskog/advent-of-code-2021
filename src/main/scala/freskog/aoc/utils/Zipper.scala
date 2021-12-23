@@ -93,7 +93,8 @@ trait Zipper[Tree, Node, Leaf] { self =>
   def nextLeaf(implicit ev: Node <:< Tree): Option[Zipper[Tree, Node, Leaf]] =
     nextWhere(_.isLeaf)
 
-  def prevWhere(p: Zipper[Tree, Node, Leaf] => Boolean)(implicit ev: Node <:< Tree): Option[Zipper[Tree, Node, Leaf]] =
+  @tailrec
+  final def prevWhere(p: Zipper[Tree, Node, Leaf] => Boolean)(implicit ev: Node <:< Tree): Option[Zipper[Tree, Node, Leaf]] =
     prev match {
       case Some(zipper) =>
         if (p(zipper)) Some(zipper) else zipper.prevWhere(p)
