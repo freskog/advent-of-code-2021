@@ -11,10 +11,10 @@ object Day1Solution extends ZIOAppDefault {
         collect[Chunk[Long],(Long,Long)] { case Chunk(prev, curr) if prev < curr => (prev,curr) }
     
     val part1 =
-        sliding(2) @@ increasingOnly
+        sliding(2) andThen increasingOnly
 
     val part2 =
-        sliding(3) @@ map[Chunk[Long],Long](_.sum) @@ sliding(2) @@ increasingOnly
+        sliding(3) andThen map[Chunk[Long],Long](_.sum) andThen sliding(2) andThen increasingOnly
 
     val run = {
         val input = readAsOneLongPerLine("day1/day1-input-part-1.txt")

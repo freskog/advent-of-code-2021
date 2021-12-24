@@ -50,7 +50,7 @@ object Day13Solution extends ZIOAppDefault {
 
   def solve(inputPath: String, headOnly:Boolean) =
     readAsGroupsSplitByEmptyLine(inputPath)
-      .peel(ZSink.take[Throwable, String](1))
+      .peel(ZSink.take[String](1))
       .use { case (pointsChunk, foldStream) =>
         val points = decodePoints(pointsChunk.mkString(""))
 

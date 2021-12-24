@@ -2,8 +2,6 @@ package freskog.aoc.day4
 
 import zio._
 import zio.stream._
-import java.io.IOException
-
 object Day4Solution extends ZIOAppDefault {
 
   case class BingoCard(markedNumbers: List[Int], byRows: Array[Array[Int]], byCols: Array[Array[Int]]) {
@@ -47,13 +45,13 @@ object Day4Solution extends ZIOAppDefault {
   def readBingoCard(path: String, winner:Boolean) =
     ZStream
       .fromResource(path)
-      .via(ZPipeline.utf8Decode @@ ZPipeline.splitOn("\n\n"))
+      .via(ZPipeline.utf8Decode andThen ZPipeline.splitOn("\n\n"))
       .filterNot(_.isEmpty())
-      .peel(ZSink.take[IOException, String](1).map(_.mkString.split(",").toList.map(_.toInt)))
+      .peel(ZSink.take[String](1).map(_.mkString.split(",").toList.map(_.toInt)))
       .use {
           case (numbers, cards) => 
               cards
-              .map(BingoCard.buildBingoCard(_))
+              .map(BingoCard.buildBingoCard)
               .map(_.play(numbers))
               .collect { case Some(bingoCard) => bingoCard }
               .runFold(BingoCard(if(winner) numbers else Nil, new Array[Array[Int]](0), new Array[Array[Int]](0)))(

@@ -26,7 +26,7 @@ object Day14Solution extends ZIOAppDefault {
 
   def solve(inputPath: String, steps:Int) =
     readAsGroupsSplitByEmptyLine(inputPath)
-      .peel(ZSink.take[Throwable, String](1).map(_.head).map(_.toCharArray).map(Chunk.fromArray))
+      .peel(ZSink.take[String](1).map(_.head).map(_.toCharArray).map(Chunk.fromArray))
       .use({ case (start, mappings) =>
         val pairPattern = """(\w+) -> (\w)""".r
         mappings
