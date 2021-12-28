@@ -29,41 +29,37 @@ object Day21Solution extends ZIOAppDefault {
   def pos(n:Long):Score = if (n == 0L) 10L else n
 
   val die = List(1L,2L,3L)
-  val rolls = for( fst <- die ; sec <- die ; trd <- die ) yield fst + sec + trd
+  val rolls = (for( fst <- die ; sec <- die ; trd <- die ) yield fst + sec + trd)
 
   type Pos = Long
   type Turn = Int
   type Score = Long
   type Universes = Long
 
-  def playOneTurn(prevOutcomes:Map[(Pos,Score),Universes]):Map[(Pos,Score),Universes] =
-    prevOutcomes.foldLeft(Map.empty[(Pos,Score),Universes]) {
-      case (nextOutcomes, ((prevPos,prevScore),prevCount)) =>
-        nextScores(prevPos).foldLeft(nextOutcomes) {
-          case (acc, (nextPos, newCounts)) =>
-            val nextScore = prevScore + nextPos
-            val nextCount = prevCount * newCounts
-            acc.updated((nextPos, nextScore), acc.getOrElse((nextPos, nextScore), 0L) + nextCount)
-        }
-    }
+  def combine(t1:(Long,Long),t2:(Long,Long)):(Long,Long) =
+    (t1._1 + t2._1, t1._2 + t2._2)
 
-  def play(inProgress:Map[(Pos,Score),Universes], done:Map[Turn, Universes], turn:Int):Map[Turn, Universes] =
-    if(inProgress.isEmpty) done
-    else {
-      val (completed, stillInProgress) = playOneTurn(inProgress).partition(_._1._2 >= 21)
-      play(stillInProgress, if(completed.isEmpty) done else done.updated(turn, completed.values.sum), turn+1)
-    }
+  def solvePart2(p1:Pos, p2:Pos, scoreP1:Score, scoreP2:Score, unis:Universes, nextUp:Int):(Universes, Universes) =
+    if(scoreP1 >= 21) (unis, 0L)
+    else if(scoreP2 >= 21) (0L, unis)
+    else if(nextUp == 1)
+      nextPos(p1).foldLeft((0L,0L)) {
+        case (acc, (nextP1,unisP1)) =>
+          combine(acc, solvePart2(nextP1,p2, scoreP1+nextP1, scoreP2, unis*unisP1, 2))
+      }
+    else
+      nextPos(p2).foldLeft((0L,0L)) {
+        case (acc, (nextP2,unisP2)) =>
+          combine(acc,solvePart2(p1, nextP2, scoreP1, scoreP2+nextP2, unis*unisP2, 1))
+      }
 
-  def mostWins(startPosP1: Pos, startPosP2: Pos) = {
-    val outcomesP1 = play(Map((startPosP1, 0L) -> 1L), Map.empty, 0)
-    val outcomesP2 = play(Map((startPosP2, 0L) -> 1L), Map.empty, 0)
-    val winsP1 = for ( (tp1, unisp1) <- outcomesP1 ; (tp2, _) <- outcomesP2 if tp1 <= tp2) yield unisp1
-    val winsP2 = for ( (tp2, unisp2) <- outcomesP2 ; (tp1, _) <- outcomesP2 if tp2 < tp1) yield unisp2
-    (outcomesP1.values.sum, outcomesP2.values.sum)
+  def mostWins(l: Long, l1: Long):Long = {
+    val (p1, p2) = solvePart2(l,l1, 0L, 0L, 1L, 1)
+    math.max(p1,p2)
   }
 
 
-  def nextScores(p:Pos):Map[Pos, Universes] =
+  def nextPos(p:Pos):Map[Pos, Universes] =
     rolls.groupBy(identity).map { case (sum, outcomes) => pos((sum + p) % 10L) -> outcomes.size.toLong }
 
   val inputPattern = """Player 1 starting position: (\d+)
@@ -89,5 +85,5 @@ object Day21Solution extends ZIOAppDefault {
 
   override def run: ZIO[ZEnv with ZIOAppArgs, Any, Any] =
     part1("day21/day21-input-part-1.txt").flatMap(answer => Console.printLine(s"Part1: $answer")) *>
-      part2("day21/day21-test-input-part-1.txt").flatMap(answer => Console.printLine(s"Part2: $answer"))
+      part2("day21/day21-input-part-1.txt").flatMap(answer => Console.printLine(s"Part2: $answer"))
 }
